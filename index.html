@@ -2,163 +2,259 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Схема размещения диодов</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LED Calculator Pro (РўРµСЃС‚)</title>
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --primary: #00F5FF;
+      --dark: #0F172A;
+      --gray: #334155;
     }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--dark);
+      color: white;
       margin: 0;
-      padding: 40px 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 0;
     }
-    h1 {
-      margin-bottom: 30px;
-      color: #38bdf8;
-      text-align: center;
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
     }
-    .form-container {
-      background: #1e293b;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      max-width: 800px;
+    .calculator {
+      padding: 2rem;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
     }
-    label {
-      display: flex;
-      flex-direction: column;
-      color: #f1f5f9;
-      font-size: 14px;
-      margin: 5px;
+    .form-group {
+      margin-bottom: 1rem;
     }
-    input, select, button {
-      padding: 8px 10px;
-      font-size: 14px;
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
       border: none;
       border-radius: 6px;
-    }
-    input, select {
-      background-color: #334155;
-      color: #f8fafc;
-    }
-    button {
-      background-color: #38bdf8;
-      color: #0f172a;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background-color: #0ea5e9;
-    }
-    #canvasContainer {
-      background: #f1f5f9;
-      border-radius: 10px;
-      margin-top: 30px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    canvas {
-      display: block;
-      border-radius: 10px;
-    }
-    #output {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #cbd5e1;
       background: #1e293b;
-      padding: 10px 15px;
+      color: white;
+    }
+    #calculate-btn {
+      width: 100%;
+      background: var(--primary);
+      color: #0F172A;
+      border: none;
+      padding: 0.75rem;
+      font-weight: bold;
       border-radius: 8px;
-      max-width: 600px;
-      text-align: center;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .result {
+      margin-top: 1.5rem;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    .visualization {
+      position: relative;
+      background: radial-gradient(circle at center, #1E293B 0%, var(--dark) 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .letter-container {
+      position: relative;
+      width: 300px;
+      height: 400px;
+    }
+    .led {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.3s ease;
+    }
+    .led.single { background: var(--primary); box-shadow: 0 0 10px 2px var(--primary); }
+    .led.double { background: #FF00AA; box-shadow: 0 0 10px 2px #FF00AA; }
+    .led.triple { background: #00FFAA; box-shadow: 0 0 10px 2px #00FFAA; }
+    .letter-outline {
+      position: absolute;
+      font-size: 200px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      color: rgba(255,255,255,0.05);
+      pointer-events: none;
+    }
+    .language-switcher {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+    .language-btn {
+      background: var(--gray);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      margin: 0 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .language-btn.active {
+      background: var(--primary);
+      color: var(--dark);
+    }
+    .badge {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
     }
   </style>
 </head>
 <body>
-  <h1>Генератор схемы размещения диодов</h1>
-
-  <div class="form-container">
-    <label>Буква:
-      <input type="text" id="letter" maxlength="1" />
-    </label>
-    <label>Высота (см):
-      <input type="number" id="height" />
-    </label>
-    <label>Ширина (см):
-      <input type="number" id="width" />
-    </label>
-    <label>Глубина (см):
-      <input type="number" id="depth" />
-    </label>
-    <label>Тип диода:
-      <select id="diodeType">
-        <option value="3point">Трёхточечный 1.5W</option>
-        <option value="4point">Четырёхточечный 2.0W</option>
-      </select>
-    </label>
-    <button onclick="generateLayout()">Показать схему</button>
+  <div class="language-switcher">
+    <button class="language-btn active" data-lang="ru">Р СѓСЃ</button>
+    <button class="language-btn" data-lang="kz">ТљР°Р·</button>
   </div>
 
-  <div id="canvasContainer">
-    <canvas id="layoutCanvas" width="500" height="500"></canvas>
+  <div class="container">
+    <div class="calculator">
+      <h1><span data-i18n="title">LED CALCULATOR</span> <span style="color: var(--primary)">PRO</span></h1>
+
+      <div class="form-group">
+        <label data-i18n="letterText">РўРµРєСЃС‚ Р±СѓРєРІС‹:</label>
+        <input type="text" id="letter-text" value="A" maxlength="1" oninput="validateInput(this)">
+      </div>
+
+      <div class="form-group">
+        <label data-i18n="ledType">РўРёРї РґРёРѕРґРѕРІ:</label>
+        <select id="led-type">
+          <option value="single">РћРґРЅРѕС‚РѕС‡РµС‡РЅС‹Рµ (5РјРј)</option>
+          <option value="double">Р”РІСѓС…С‚РѕС‡РµС‡РЅС‹Рµ (10РјРј)</option>
+          <option value="triple">РўСЂС‘С…С‚РѕС‡РµС‡РЅС‹Рµ (15РјРј)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label data-i18n="dimensions">Р Р°Р·РјРµСЂС‹ (СЃРј):</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="number" id="width" placeholder="РЁРёСЂРёРЅР°" value="50">
+          <input type="number" id="height" placeholder="Р’С‹СЃРѕС‚Р°" value="70">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label data-i18n="lightingType">РўРёРї СЃРІРµС‡РµРЅРёСЏ:</label>
+        <select id="lighting-type">
+          <option value="front">РўРѕР»СЊРєРѕ Р»РёС†РµРІР°СЏ СЃС‚РѕСЂРѕРЅР°</option>
+          <option value="both">Р”РІРµ СЃС‚РѕСЂРѕРЅС‹</option>
+          <option value="contour">РўРѕР»СЊРєРѕ РєРѕРЅС‚СѓСЂ</option>
+        </select>
+      </div>
+
+      <button id="calculate-btn" data-i18n="calculate">Р РђРЎРЎР§РРўРђРўР¬</button>
+
+      <div class="result">
+        <h3 data-i18n="result">Р РµР·СѓР»СЊС‚Р°С‚:</h3>
+        <div id="led-count">0</div>
+        <div id="power-info">~ 0W</div>
+        <div id="price-info" style="margin-top: 10px;"></div>
+      </div>
+    </div>
+
+    <div class="visualization">
+      <div class="letter-container" id="letter-visual">
+        <div class="letter-outline" id="letter-outline">A</div>
+      </div>
+    </div>
   </div>
 
-  <p id="output"></p>
+  <div class="badge">РџСЂРѕС‚РѕС‚РёРї В· РўРµСЃС‚РѕРІР°СЏ РІРµСЂСЃРёСЏ</div>
 
   <script>
-    function generateLayout() {
-      const letter = document.getElementById('letter').value.toUpperCase();
-      const height = parseFloat(document.getElementById('height').value);
-      const width = parseFloat(document.getElementById('width').value);
-      const depth = parseFloat(document.getElementById('depth').value);
-      const diodeType = document.getElementById('diodeType').value;
+    document.getElementById('calculate-btn').addEventListener('click', calculate);
 
-      const canvas = document.getElementById('layoutCanvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(50, 50, 400, 400);
-
-      const diodeSpecs = {
-        '3point': { power: 1.5, spacing: 10 },
-        '4point': { power: 2.0, spacing: 12 }
-      };
-
-      const specs = diodeSpecs[diodeType];
-
-      const area = height * width;
-      const diodeCount = Math.ceil(area / (specs.spacing * specs.spacing));
-      const cols = Math.ceil(Math.sqrt(diodeCount));
-      const rows = Math.ceil(diodeCount / cols);
-
-      for (let i = 0; i < diodeCount; i++) {
-        const x = 50 + 400 / (cols + 1) * ((i % cols) + 1);
-        const y = 50 + 400 / (rows + 1) * (Math.floor(i / cols) + 1);
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ef4444';
-        ctx.fill();
+    function validateInput(input) {
+      const letter = input.value;
+      if (!/^[Р°-СЏРђ-РЇС‘РЃa-zA-Z]$/.test(letter) && letter !== '') {
+        input.value = '';
+        alert('Р’РІРµРґРёС‚Рµ РѕРґРЅСѓ Р±СѓРєРІСѓ');
       }
-
-      const totalPower = (diodeCount * specs.power).toFixed(1);
-      const recommendedPower = Math.ceil(totalPower * 1.3);
-
-      document.getElementById('output').innerText =
-        `Буква: ${letter}, Диодов: ${diodeCount}, Мощность: ${totalPower} Вт. Рекомендуемый блок питания: ${recommendedPower} Вт.`;
     }
+
+    function calculate() {
+      const letter = document.getElementById('letter-text').value.toUpperCase() || 'A';
+      const type = document.getElementById('led-type').value;
+      const width = parseFloat(document.getElementById('width').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const lighting = document.getElementById('lighting-type').value;
+
+      document.getElementById('letter-outline').textContent = letter;
+
+      const ledCount = Math.round((width + height) * (type === 'single' ? 1.5 : type === 'double' ? 1.2 : 1));
+      const power = (ledCount * (type === 'single' ? 0.1 : type === 'double' ? 0.15 : 0.2)).toFixed(1);
+      const price = (ledCount * (type === 'single' ? 50 : type === 'double' ? 80 : 120)).toLocaleString();
+
+      document.getElementById('led-count').textContent = `РќРµРѕР±С…РѕРґРёРјРѕ РґРёРѕРґРѕРІ: ${ledCount}`;
+      document.getElementById('power-info').textContent = `РџРѕС‚СЂРµР±Р»СЏРµРјР°СЏ РјРѕС‰РЅРѕСЃС‚СЊ: ~ ${power}W`;
+      document.getElementById('price-info').textContent = `РџСЂРёРјРµСЂРЅР°СЏ СЃС‚РѕРёРјРѕСЃС‚СЊ: ${price} в‚ё`;
+
+      generateLetterVisual(letter, type, width, height, lighting);
+    }
+
+    function generateLetterVisual(letter, type, width, height, lighting) {
+      const container = document.getElementById('letter-visual');
+      container.querySelectorAll('.led').forEach(el => el.remove());
+
+      const scale = Math.min(300 / width, 400 / height);
+      const cols = Math.floor(width / 5);
+      const rows = Math.floor(height / 5);
+
+      if (lighting === 'contour') {
+        for (let i = 0; i < 360; i += 10) {
+          const angle = i * (Math.PI / 180);
+          const x = 50 + Math.cos(angle) * 30;
+          const y = 50 + Math.sin(angle) * 30;
+          addLED(container, x, y, type);
+        }
+      } else {
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const x = (col / (cols - 1)) * 100;
+            const y = (row / (rows - 1)) * 100;
+            addLED(container, x, y, type);
+            if (lighting === 'both') {
+              addLED(container, x, y, type, true);
+            }
+          }
+        }
+      }
+    }
+
+    function addLED(container, x, y, type, back = false) {
+      const led = document.createElement('div');
+      led.className = `led ${type}`;
+      led.style.left = `${x}%`;
+      led.style.top = `${y}%`;
+      led.style.width = type === 'single' ? '8px' : type === 'double' ? '12px' : '16px';
+      led.style.height = led.style.width;
+      if (back) led.style.opacity = '0.5';
+      container.appendChild(led);
+    }
+
+    calculate();
   </script>
 </body>
 </html>
